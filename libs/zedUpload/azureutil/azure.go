@@ -99,6 +99,9 @@ func newPipeline(accountName, accountKey string, httpClient *http.Client) (pipel
 	}
 	p := azblob.NewPipeline(credential, azblob.PipelineOptions{
 		HTTPSender: sender,
+		Retry: azblob.RetryOptions{
+			TryTimeout: time.Second * 120,
+		},
 		RequestLog: azblob.RequestLogOptions{
 			LogWarningIfTryOverThreshold: -1,
 			SyslogDisabled:               true,
