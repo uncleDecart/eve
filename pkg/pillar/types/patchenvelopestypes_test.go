@@ -11,10 +11,11 @@ import (
 	"testing"
 
 	"github.com/onsi/gomega"
+	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPatchEnvelopes(t *testing.T) {
+func TestPatchEnvelopeInfo(t *testing.T) {
 	g := gomega.NewGomegaWithT(t)
 	pe := []PatchEnvelopeInfo{}
 
@@ -111,4 +112,99 @@ func TestFindPatchEnvelopeById(t *testing.T) {
 
 	got = FindPatchEnvelopeById(pes, "NonExistingPatchId")
 	g.Expect(got).To(gomega.BeNil())
+}
+
+func TestPatchEnvelopes(t *testing.T) {
+	g := gomega.NewGomegaWithT(t)
+
+	peStore := NewPatchEnvelopes()
+
+	u := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+	u1, _ := uuid.FromString(u)
+	filecontent := "blobfilecontent"
+	path, err := os.MkdirTemp("", "testFolder")
+	f := filepath.Join(path, "blobfile")
+	g.Expect(err).To(gomega.BeNil())
+
+	os.WriteFile(f, []byte(filecontent), 0755)
+	defer os.Remove(f)
+
+	volumeStatuses := []VolumeStatus{
+		{
+			VolumeID:     u1,
+			State:        INSTALLED,
+			FileLocation: f,
+		},
+	}
+	uuidString := "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+
+	peInfo := []PatchEnvelopeInfo{
+		{
+			PatchId:     "PatchId1",
+			AllowedApps: []string{uuidString},
+			BinaryBlobs: []BinaryBlobCompleted{
+				{
+					FileName:     "TestFileName",
+					FileSha:      "TestFileSha",
+					FileMetadata: "TestFileMetadata",
+					Url:          "./testurl",
+				},
+			},
+			VolumeRefs: []BinaryBlobVolumeRef{
+				{
+					FileName:     "VolTestFileName",
+					ImageName:    "VolTestImageName",
+					FileMetadata: "VolTestFileMetadata",
+					ImageId:      u,
+				},
+			},
+		},
+	}
+
+	peStore.Wg.Add(1)
+	go func() {
+		for _, vs := range volumeStatuses {
+			peStore.VolumeStatusCh <- PatchEnvelopesVsCh{
+				Vs:     vs,
+				Action: PatchEnvelopesVsChActionPut,
+			}
+		}
+	}()
+
+	peStore.Wg.Add(1)
+	go func() {
+		peStore.PatchEnvelopeInfoCh <- peInfo
+	}()
+
+	peStore.Wg.Wait()
+
+	g.Expect(peStore.Get(u)).To(gomega.BeEquivalentTo(
+		[]PatchEnvelopeInfo{
+			{
+				PatchId:     "PatchId1",
+				AllowedApps: []string{uuidString},
+				BinaryBlobs: []BinaryBlobCompleted{
+					{
+						FileName:     "TestFileName",
+						FileSha:      "TestFileSha",
+						FileMetadata: "TestFileMetadata",
+						Url:          "./testurl",
+					},
+					{
+						FileName:     "VolTestFileName",
+						FileSha:      "2c096be52e6f8510b4deac978f700dd103f144539e4ccdede5b075ce55dca980",
+						FileMetadata: "VolTestFileMetadata",
+						Url:          f,
+					},
+				},
+				VolumeRefs: []BinaryBlobVolumeRef{
+					{
+						FileName:     "VolTestFileName",
+						ImageName:    "VolTestImageName",
+						FileMetadata: "VolTestFileMetadata",
+						ImageId:      u,
+					},
+				},
+			},
+		}))
 }
