@@ -31,7 +31,7 @@ func parsePatchEnvelopesImpl(ctx *getconfigContext, config *zconfig.EdgeDevConfi
 	}
 
 	patchEnvelopes := config.GetPatchEnvelopes()
-	result := types.PatchEnvelopes{}
+	result := make([]types.PatchEnvelopeInfo, len(patchEnvelopes))
 	for _, pe := range patchEnvelopes {
 		peInfo := types.PatchEnvelopeInfo{
 			AllowedApps: pe.GetAppInstIdsAllowed(),
@@ -45,14 +45,14 @@ func parsePatchEnvelopesImpl(ctx *getconfigContext, config *zconfig.EdgeDevConfi
 			}
 		}
 
-		result.Envelopes = append(result.Envelopes, peInfo)
+		result = append(result, peInfo)
 	}
 
 	publishPatchEnvelopes(ctx, result)
 }
 
-func publishPatchEnvelopes(ctx *getconfigContext, patchEnvelopes types.PatchEnvelopes) {
-	key := patchEnvelopes.Key()
+func publishPatchEnvelopes(ctx *getconfigContext, patchEnvelopes []types.PatchEnvelopeInfo) {
+	key := types.PatchEnvelopeInfoKey()
 	pub := ctx.pubPatchEnvelopeInfo
 
 	pub.Publish(key, patchEnvelopes)

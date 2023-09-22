@@ -15,7 +15,7 @@ type PatchEnvelopes struct {
 }
 
 // Key for pubsub
-func (PatchEnvelopes) Key() string {
+func PatchEnvelopeInfoKey() string {
 	return "zedagent"
 }
 
@@ -28,10 +28,10 @@ type PatchEnvelopeInfo struct {
 	VolumeRefs  []BinaryBlobVolumeRef
 }
 
-func (pe *PatchEnvelopes) Get(appUuid string) []PatchEnvelopeInfo {
+func FindPatchEnvelopesByApp(pe []PatchEnvelopeInfo, appUuid string) []PatchEnvelopeInfo {
 	var res []PatchEnvelopeInfo
 
-	for _, envelope := range pe.Envelopes {
+	for _, envelope := range pe {
 		for _, allowedUuid := range envelope.AllowedApps {
 			if allowedUuid == appUuid {
 				res = append(res, envelope)
