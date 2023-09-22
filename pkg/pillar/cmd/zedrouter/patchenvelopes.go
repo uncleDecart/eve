@@ -22,7 +22,6 @@ type PatchEnvelopes struct {
 	sync.Mutex
 	VolumeStatusCh      chan PatchEnvelopesVsCh
 	PatchEnvelopeInfoCh chan []types.PatchEnvelopeInfo
-	Wg                  sync.WaitGroup
 
 	envelopes        []types.PatchEnvelopeInfo
 	completedVolumes []types.VolumeStatus
@@ -86,7 +85,6 @@ func (pes *PatchEnvelopes) processMessages() {
 		case newPatchEnvelopeInfo := <-pes.PatchEnvelopeInfoCh:
 			pes.updateEnvelopes(newPatchEnvelopeInfo)
 		}
-		pes.Wg.Done()
 	}
 }
 
@@ -100,7 +98,7 @@ func (pes *PatchEnvelopes) updateVolumeStatus(volumeStatus PatchEnvelopesVsCh) {
 }
 
 func (pes *PatchEnvelopes) updateExternalPatches(vs types.VolumeStatus) {
-	if vs.State != types.INSTALLED {
+	if vs.State < types.CREATED_VOLUME {
 		return
 	}
 

@@ -175,6 +175,7 @@ type zedrouter struct {
 	// for external patch envelopes
 	subPatchEnvelopeInfo pubsub.Subscription
 	subVolumeStatus      pubsub.Subscription
+	patchEnvelopes       *PatchEnvelopes
 }
 
 // AddAgentSpecificCLIFlags adds CLI options
@@ -213,6 +214,8 @@ func (z *zedrouter) init() (err error) {
 
 	z.zedcloudMetrics = zedcloud.NewAgentMetrics()
 	z.cipherMetrics = cipher.NewAgentMetrics(agentName)
+
+	z.patchEnvelopes = NewPatchEnvelopes(z.log)
 
 	gcp := *types.DefaultConfigItemValueMap()
 	z.appContainerStatsInterval = gcp.GlobalValueInt(types.AppContainerStatsInterval)
@@ -799,12 +802,15 @@ func (z *zedrouter) initSubscriptions() (err error) {
 
 	// Information about patch envelopes
 	z.subPatchEnvelopeInfo, err = z.pubSub.NewSubscription(pubsub.SubscriptionOptions{
-		AgentName:   "zedagent",
-		MyAgentName: agentName,
-		TopicImpl:   types.PatchEnvelopeInfoList{},
-		Activate:    false,
-		WarningTime: warningTime,
-		ErrorTime:   errorTime,
+		AgentName:     "zedagent",
+		MyAgentName:   agentName,
+		TopicImpl:     types.PatchEnvelopeInfoList{},
+		Activate:      false,
+		CreateHandler: z.handlePatchEnvelopeCreate,
+		ModifyHandler: z.handlePatchEnvelopeModify,
+		DeleteHandler: z.handlePatchEnvelopeDelete,
+		WarningTime:   warningTime,
+		ErrorTime:     errorTime,
 	})
 	if err != nil {
 		return err
@@ -812,12 +818,15 @@ func (z *zedrouter) initSubscriptions() (err error) {
 
 	// Information about volumes referred in external patch envelopes
 	z.subVolumeStatus, err = z.pubSub.NewSubscription(pubsub.SubscriptionOptions{
-		AgentName:   "volumemgr",
-		MyAgentName: agentName,
-		TopicImpl:   types.VolumeStatus{},
-		Activate:    false,
-		WarningTime: warningTime,
-		ErrorTime:   errorTime,
+		AgentName:     "volumemgr",
+		MyAgentName:   agentName,
+		TopicImpl:     types.VolumeStatus{},
+		Activate:      false,
+		CreateHandler: z.handleVolumeStatusCreate,
+		ModifyHandler: z.handleVolumeStatusModify,
+		DeleteHandler: z.handleVolumeStatusDelete,
+		WarningTime:   warningTime,
+		ErrorTime:     errorTime,
 	})
 	if err != nil {
 		return err
