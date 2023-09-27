@@ -6,6 +6,7 @@ package zedagent
 import (
 	"encoding/hex"
 	"fmt"
+	"os"
 
 	"crypto/sha256"
 
@@ -21,6 +22,13 @@ func parsePatchEnvelopes(ctx *getconfigContext, config *zconfig.EdgeDevConfig) {
 func parsePatchEnvelopesImpl(ctx *getconfigContext, config *zconfig.EdgeDevConfig,
 	persistCacheFilepath string) {
 	log.Tracef("Parsing patchEnvelope from configuration")
+
+	// Remove previously created patch envelopes
+	// so that we will not have stale objects
+	if err := os.RemoveAll(persistCacheFilepath); err != nil {
+		log.Errorf("Failed to delete persistCacheFilepath %v", err)
+		return
+	}
 
 	patchEnvelopes := config.GetPatchEnvelopes()
 	result := types.PatchEnvelopes{}
