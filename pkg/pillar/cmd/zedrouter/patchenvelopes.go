@@ -187,10 +187,11 @@ func blobFromVolRef(vr types.BinaryBlobVolumeRef, vs types.VolumeStatus) (*types
 		return nil, err
 	}
 	return &types.BinaryBlobCompleted{
-		FileName:     vr.FileName,
-		FileMetadata: vr.FileMetadata,
-		FileSha:      fmt.Sprintf("%x", sha),
-		URL:          vs.FileLocation,
+		FileName:         vr.FileName,
+		FileMetadata:     vr.FileMetadata,
+		ArtifactMetadata: vr.ArtifactMetadata,
+		FileSha:          fmt.Sprintf("%x", sha),
+		URL:              vs.FileLocation,
 	}, nil
 }
 
