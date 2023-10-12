@@ -583,7 +583,7 @@ func HandlePatchDescription(z *zedrouter) func(http.ResponseWriter, *http.Reques
 		// WithPatchEnvelopesByIP middleware returns envelopes which are more than 0
 		envelopes := r.Context().Value(patchEnvelopesContextKey).(types.PatchEnvelopeInfoList)
 
-		b, err := PatchEnvelopesJSONForAppInstance(envelopes)
+		b, err := patchEnvelopesJSONFOrAppInstance(envelopes)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnprocessableEntity)
 			return

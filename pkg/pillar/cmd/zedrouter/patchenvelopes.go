@@ -208,15 +208,30 @@ type peInfoToDisplay struct {
 	VolumeRefs  []types.BinaryBlobVolumeRef
 }
 
-// PatchEnvelopesJSONForAppInstance returns json representation
+const metadataIP = "169.254.169.254"
+
+// patchEnvelopesJSONFOrAppInstance returns json representation
 // of Patch Envelopes list which are shown to app instances
-func PatchEnvelopesJSONForAppInstance(pe types.PatchEnvelopeInfoList) ([]byte, error) {
+func patchEnvelopesJSONFOrAppInstance(pe types.PatchEnvelopeInfoList) ([]byte, error) {
 	toDisplay := make([]peInfoToDisplay, len(pe.Envelopes))
 
 	for i, envelope := range pe.Envelopes {
+
+		var binaryBlobs []types.BinaryBlobCompleted
+		binaryBlobs = nil
+		if envelope.BinaryBlobs != nil {
+			binaryBlobs = make([]types.BinaryBlobCompleted, len(envelope.BinaryBlobs))
+			copy(binaryBlobs, envelope.BinaryBlobs)
+		}
+
+		for j := range binaryBlobs {
+			url := fmt.Sprintf("http://%s%sdownload/%s/%s", metadataIP, PatchEnvelopeHandler, envelope.PatchID, binaryBlobs[j].FileName)
+			binaryBlobs[j].URL = url
+		}
+
 		toDisplay[i] = peInfoToDisplay{
 			PatchID:     envelope.PatchID,
-			BinaryBlobs: envelope.BinaryBlobs,
+			BinaryBlobs: binaryBlobs,
 			VolumeRefs:  envelope.VolumeRefs,
 		}
 	}

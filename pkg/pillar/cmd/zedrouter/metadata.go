@@ -31,6 +31,10 @@ const SignerMaxSize = 65535
 // DiagMaxSize is the max returned size for diag
 const DiagMaxSize = 65535
 
+// PatchEnvelopeHandler is route used for patch envelopes
+// it is used in URL composing of patch envelopes
+const PatchEnvelopeHandler = "/eve/v1/patch/"
+
 func (z *zedrouter) makeMetadataHandler() http.Handler {
 	r := chi.NewRouter()
 
@@ -87,7 +91,7 @@ func (z *zedrouter) makeMetadataHandler() http.Handler {
 	diagHandler := &diagHandler{zedrouter: z}
 	r.Get("/eve/v1/diag", diagHandler.ServeHTTP)
 
-	r.Route("/eve/v1/patch/", func(r chi.Router) {
+	r.Route(PatchEnvelopeHandler, func(r chi.Router) {
 		r.Use(WithPatchEnvelopesByIP(z))
 
 		r.Get("/description.json", HandlePatchDescription(z))
