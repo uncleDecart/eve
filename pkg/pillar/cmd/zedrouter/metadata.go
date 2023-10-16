@@ -99,5 +99,7 @@ func (z *zedrouter) makeMetadataHandler() http.Handler {
 		r.Get("/download/{patch}/{file}", HandlePatchFileDownload(z))
 	})
 
+	r.Post("/eve/v1/opaque-status", HandleAppInstanceOpaqueStatus(z))
+
 	return r
 }

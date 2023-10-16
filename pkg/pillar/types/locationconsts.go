@@ -41,6 +41,8 @@ const (
 	SnapshotInstanceStatusFilename = "snapshotInstanceStatus.json"
 	// PersistCachePatchEnvelopes - folder to store inline patch envelopes
 	PersistCachePatchEnvelopes = PersistDir + "/patchEnvelopesCache"
+	// PersistCacheOpaqueAppStatus - folder to store opaque app instance statuses
+	PersistCacheOpaqueAppStatus = PersistDir + "/opaqueAppStatus"
 
 	// IdentityDirname - Config dir
 	IdentityDirname = "/config"

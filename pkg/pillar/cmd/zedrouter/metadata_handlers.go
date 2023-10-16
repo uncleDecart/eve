@@ -6,6 +6,7 @@ package zedrouter
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -20,7 +21,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/lf-edge/eve/pkg/pillar/types"
 	"github.com/lf-edge/eve/pkg/pillar/zedcloud"
+	uuid "github.com/satori/go.uuid"
 
+	"github.com/lf-edge/eve/pkg/pillar/persistcache"
 	"github.com/lf-edge/eve/pkg/pillar/utils"
 	fileutils "github.com/lf-edge/eve/pkg/pillar/utils/file"
 )
@@ -97,6 +100,7 @@ type middlewareKeys int
 
 const (
 	patchEnvelopesContextKey middlewareKeys = iota
+	appInstanceIPContextKey
 )
 
 // ServeHTTP for networkHandler provides a json return
@@ -601,6 +605,17 @@ func sendError(w http.ResponseWriter, code int, msg string) {
 	w.Write([]byte(fmt.Sprintf("{\"message\": \"%s\"}", msg)))
 }
 
+func appInstanceUUIDByIP(z *zedrouter, remoteAddr string) (uuid.UUID, error) {
+	remoteIP := net.ParseIP(strings.Split(remoteAddr, ":")[0])
+	anStatus := z.lookupAppNetworkStatusByAppIP(remoteIP)
+	if anStatus == nil {
+		return uuid.Nil, fmt.Errorf("No AppNetworkStatus for %s",
+			remoteIP.String())
+	}
+
+	return anStatus.UUIDandVersion.UUID, nil
+}
+
 // HandlePatchDownload serves binary artifacts of specified patch envelope to app
 // instance. Patch envelope id is specified in URL. All artifacts are compressed to
 // a zip archive
@@ -685,17 +700,12 @@ func HandlePatchFileDownload(z *zedrouter) func(http.ResponseWriter, *http.Reque
 func WithPatchEnvelopesByIP(z *zedrouter) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-			remoteIP := net.ParseIP(strings.Split(r.RemoteAddr, ":")[0])
-			anStatus := z.lookupAppNetworkStatusByAppIP(remoteIP)
-			if anStatus == nil {
+			appUUID, err := appInstanceUUIDByIP(z, r.RemoteAddr)
+			if err != nil {
 				w.WriteHeader(http.StatusNoContent)
-				z.log.Errorf("No AppNetworkStatus for %s",
-					remoteIP.String())
+				z.log.Errorf("No AppNetworkStatus for %s", r.RemoteAddr)
 				return
 			}
-
-			appUUID := anStatus.UUIDandVersion.UUID
 
 			accessablePe := z.patchEnvelopes.Get(appUUID.String())
 			if len(accessablePe.Envelopes) == 0 {
@@ -707,5 +717,63 @@ func WithPatchEnvelopesByIP(z *zedrouter) func(http.Handler) http.Handler {
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 		})
+	}
+}
+
+// HandleAppInstanceOpaqueStatus sends pubSub message to update controller with new
+// status from app if it has changed
+func HandleAppInstanceOpaqueStatus(z *zedrouter) func(http.ResponseWriter, *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		opaqueStatus, err := io.ReadAll(io.LimitReader(r.Body, AppInstMetadataResponseSizeLimitInBytes))
+		if err != nil {
+			msg := fmt.Sprintf("appInstMetaHandler: ReadAll failed: %v", err)
+			sendError(w, http.StatusInternalServerError, msg)
+			z.log.Error(msg)
+		}
+		if r.Header.Get("Content-Type") != "application/octet-stream" {
+			msg := "HandleAppInstanceOpaqueStatus: Content-Type header is not application/octet-stream"
+			sendError(w, http.StatusUnsupportedMediaType, msg)
+			z.log.Error(msg)
+			return
+		}
+
+		appUUID, err := appInstanceUUIDByIP(z, r.RemoteAddr)
+		if err != nil {
+			msg := fmt.Sprintf("No AppNetworkStatus for %s", r.RemoteAddr)
+			sendError(w, http.StatusNoContent, msg)
+			z.log.Error(msg)
+			return
+		}
+
+		pc, err := persistcache.New(types.PersistCachePatchEnvelopes)
+		if err != nil {
+			msg := fmt.Sprintf("Failed to load persistCache %v", err)
+			sendError(w, http.StatusInternalServerError, msg)
+			z.log.Error(msg)
+			return
+		}
+
+		hasher := sha256.New()
+		hasher.Write(opaqueStatus)
+		newSha := hasher.Sum(nil)
+
+		prevSHA, err := pc.Get(appUUID.String())
+		if err != nil && !persistcache.IsKeyNotFound(err) {
+			msg := fmt.Sprintf("Failed to get  %v", err)
+			sendError(w, http.StatusInternalServerError, msg)
+			z.log.Error(msg)
+			return
+		}
+
+		if persistcache.IsKeyNotFound(err) || !bytes.Equal(newSha, prevSHA) {
+			appInstOpaqueStatus := &types.AppInstMetaData{
+				AppInstUUID: appUUID,
+				Data:        opaqueStatus,
+				Type:        types.AppInstMetaDataOpaqueStatus,
+			}
+
+			z.publishAppInstMetadata(appInstOpaqueStatus)
+			pc.Put(appUUID.String(), newSha)
+		}
 	}
 }

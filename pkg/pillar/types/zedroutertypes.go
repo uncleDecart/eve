@@ -3032,6 +3032,7 @@ const (
 	AppInstMetaDataTypeNone AppInstMetaDataType = iota // enum for app inst metadata type
 	AppInstMetaDataTypeKubeConfig
 	AppInstMetaDataCustomStatus
+	AppInstMetaDataOpaqueStatus
 )
 
 // AppInstMetaData : App Instance Metadata
