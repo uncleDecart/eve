@@ -359,3 +359,14 @@ curl -X GET http://169.254.169.254/eve/v1/patch/download/699fbdb2-e455-448f-84f5
 
 %base64-encoded file contents%
 ```
+
+### Opaque App Instance Status endpoint
+
+App Instance can send its status back to controller using opaque-status endpoint
+
+```bash
+curl -X POST http://169.254.169.254/eve/v1/opaque-status -H 'Content-type: application/octet-stream' -d 'hello world!'
+```
+
+Note that metadata server will store statuses SHA256 and update controller in case it is changed.
+Maximum status size is 35KB
