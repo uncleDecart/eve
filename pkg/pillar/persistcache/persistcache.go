@@ -49,6 +49,21 @@ func (e *InvalidValueError) Error() string {
 	return "Value is invalid"
 }
 
+// KeyNotFoundError returned when Get is
+// called with key that is not cached
+type KeyNotFoundError struct{}
+
+// Error returns error description string
+func (e *KeyNotFoundError) Error() string {
+	return "Key is not present in persistcache"
+}
+
+// IsKeyNotFound checks if error equals to KeyNotFound error
+// defined in persistcache
+func IsKeyNotFound(err error) bool {
+	return err == &KeyNotFoundError{}
+}
+
 // New loads values from cache or creates path if there's none
 func New(path string) (*PersistCache, error) {
 	pc := &PersistCache{}
@@ -94,6 +109,10 @@ func New(path string) (*PersistCache, error) {
 func (pc *PersistCache) Get(key string) ([]byte, error) {
 	pc.Lock()
 	defer pc.Unlock()
+
+	if _, ok := pc.cache[key]; !ok {
+		return []byte{}, &KeyNotFoundError{}
+	}
 
 	if len(pc.cache[key].Val) == 0 {
 		if err := pc.loadObject(key); err != nil {
@@ -144,6 +163,9 @@ func (pc *PersistCache) Delete(key string) error {
 
 // Objects returns list objects stored in PersistCache
 func (pc *PersistCache) Objects() []string {
+	pc.Lock()
+	defer pc.Unlock()
+
 	answer := make([]string, 0, len(pc.cache))
 
 	for key := range pc.cache {
@@ -151,6 +173,14 @@ func (pc *PersistCache) Objects() []string {
 	}
 
 	return answer
+}
+
+func (pc *PersistCache) sameSHA(key string, sha []byte) bool {
+	if val, ok := pc.cache[key]; ok {
+		return bytes.Equal(sha, val.Sha)
+	} else {
+		return false
+	}
 }
 
 func (pc *PersistCache) loadObject(objName string) error {
@@ -175,7 +205,7 @@ func (pc *PersistCache) loadObject(objName string) error {
 }
 
 func (pc *PersistCache) update(key string, obj objectWrapper) (string, error) {
-	if bytes.Equal(obj.Sha, pc.cache[key].Sha) {
+	if pc.sameSHA(key, obj.Sha) {
 		return filepath.Join(pc.root, key), nil
 	}
 

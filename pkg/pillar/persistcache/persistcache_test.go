@@ -98,7 +98,7 @@ func TestDelete(test *testing.T) {
 	g.Expect(err).To(gomega.BeNil())
 
 	val, err = pc.Get(obj1.Name)
-	g.Expect(err).NotTo(gomega.BeNil())
+	g.Expect(err).To(gomega.BeEquivalentTo(&persistcache.InvalidKeyError{}))
 	g.Expect(val).To(gomega.BeEquivalentTo(""))
 }
 
