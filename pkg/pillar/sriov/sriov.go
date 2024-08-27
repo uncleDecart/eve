@@ -57,8 +57,13 @@ func ParseVfIfaceName(ifname string) (uint8, string, error) {
 	return index, iface, err
 }
 
+type Result struct {
+	Val *VFList
+	Err error
+}
+
 // GetVf retrieve information about VFs for NIC given
-func GetVf(device string) (*VFList, error) { //nolint:gocyclo
+func GetVf(device string) Result { //nolint:gocyclo
 	var res []EthVF
 	virtfnRe := regexp.MustCompile(`(virtfn)(\d{1,})`)
 	pciBdfRe := regexp.MustCompile(`[0-9a-f]{4}:[0-9a-f]{2,4}:[0-9a-f]{2}\.[0-9a-f]$`)
@@ -66,71 +71,71 @@ func GetVf(device string) (*VFList, error) { //nolint:gocyclo
 
 	_, err := os.Stat(filepath.Join(NicLinuxPath, device))
 	if err != nil {
-		return nil, fmt.Errorf("NIC filepath does not exist %w", err)
+		return Result{nil, fmt.Errorf("NIC filepath does not exist %w", err)}
 	}
 
 	devInfo, err := os.Stat(devPath)
 	if err != nil {
-		return nil, fmt.Errorf("vfInfo failed. Cannot obtain get %s path info. Error: %w", devPath, err)
+		return Result{nil, fmt.Errorf("vfInfo failed. Cannot obtain get %s path info. Error: %w", devPath, err)}
 	}
 	physfnInfo, err := os.Lstat(filepath.Join(devPath, "/physfn"))
 	if err != nil && !os.IsNotExist(err) {
-		return nil, fmt.Errorf("physfn folder exists on path  %s path. Error: %w", filepath.Join(devPath, "/physfn"), err)
+		return Result{nil, fmt.Errorf("physfn folder exists on path  %s path. Error: %w", filepath.Join(devPath, "/physfn"), err)}
 	}
 
 	if devInfo.IsDir() && (os.IsNotExist(err) || physfnInfo.Mode()&os.ModeSymlink == 0) {
 		devices, err := os.ReadDir(devPath)
 		if err != nil {
-			return nil, fmt.Errorf("vfInfo failed. Cannot obtain list of %s directory. Error %w", devPath, err)
+			return Result{nil, fmt.Errorf("vfInfo failed. Cannot obtain list of %s directory. Error %w", devPath, err)}
 		}
 		for _, device := range devices {
 			match := virtfnRe.FindStringSubmatch(device.Name())
 			if len(match) > 2 {
 				pciPath, err := filepath.EvalSymlinks(filepath.Join(devPath, device.Name()))
 				if err != nil {
-					return nil, fmt.Errorf("Cannot evaluate symlink for %s device. Error %w", device.Name(), err)
+					return Result{nil, fmt.Errorf("Cannot evaluate symlink for %s device. Error %w", device.Name(), err)}
 				}
 				pciAddr := pciBdfRe.FindString(pciPath)
 				if pciAddr == "" {
-					return nil, fmt.Errorf("Cannot evaluate symlink for %s device. Error %w", device.Name(), err)
+					return Result{nil, fmt.Errorf("Cannot evaluate symlink for %s device. Error %w", device.Name(), err)}
 				}
 				vfIdx, err := strconv.ParseUint(match[2], 10, 8)
 				if err != nil {
-					return nil, fmt.Errorf("vfInfo failed. Cannot convert VF index %s to uint16 . Error %w", match[2], err)
+					return Result{nil, fmt.Errorf("vfInfo failed. Cannot convert VF index %s to uint16 . Error %w", match[2], err)}
 				}
 
 				res = append(res, EthVF{PciLong: pciAddr, Index: uint8(vfIdx)})
 			}
 		}
 	}
-	return &VFList{Data: res}, nil
+	return Result{&VFList{Data: res}, nil}
 }
 
 // GetVfByTimeout returns Vf for given PF by timeout
-func GetVfByTimeout(timeout time.Duration, device string, expectedVfCount uint8) (*VFList, error) {
+func GetVfByTimeout(timeout time.Duration, device string, expectedVfCount uint8) Result {
 	toCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	c := AsyncGetVF(toCtx, device, expectedVfCount)
 	for {
 		select {
 		case answer := <-c:
-			return answer, nil
+			return answer
 		case <-toCtx.Done():
-			return nil, fmt.Errorf("getVfByTimeout reached timeout %v", timeout)
+			return Result{nil, fmt.Errorf("getVfByTimeout reached timeout %v", timeout)}
 		}
 	}
 }
 
 // AsyncGetVF returns Vf for given PF asynchronously
-func AsyncGetVF(ctx context.Context, device string, expectedVfCount uint8) chan *VFList {
-	ch := make(chan *VFList)
+func AsyncGetVF(ctx context.Context, device string, expectedVfCount uint8) chan Result {
+	ch := make(chan Result)
 	go func() {
 		select {
 		default:
 			time.Sleep(1 * time.Second)
-			vfs, _ := GetVf(device)
-			if len(vfs.Data) == int(expectedVfCount) {
-				ch <- vfs
+			res := GetVf(device)
+			if res.Err != nil || (res.Val != nil && len(res.Val.Data) == int(expectedVfCount)) {
+				ch <- res
 				break
 			}
 		case <-ctx.Done():

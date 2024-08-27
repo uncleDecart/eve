@@ -136,11 +136,11 @@ func vfIfNameToPci(ifName string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	vfList, err := sriov.GetVf(parentIface)
-	if err != nil {
-		return "", err
+	res := sriov.GetVf(parentIface)
+	if res.Err != nil {
+		return "", res.Err
 	}
-	vfIface := vfList.GetInfo(index)
+	vfIface := res.Val.GetInfo(index)
 	if vfIface == nil {
 		return "", fmt.Errorf("Could not obtain information for %d vf for iface %s", index, parentIface)
 	}
