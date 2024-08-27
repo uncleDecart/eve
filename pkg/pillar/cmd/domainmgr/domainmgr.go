@@ -2960,12 +2960,15 @@ func handlePhysicalIOAdapterListImpl(ctxArg interface{}, key string,
 					log.Fatal("Failed to create VF for iface with PCI address", ib.PciLong)
 				}
 
-				vfs, err := sriov.GetVfByTimeout(150*time.Second, ifName, ib.Vfs.Count)
-				if err != nil {
+				res := sriov.GetVfByTimeout(150*time.Second, ifName, ib.Vfs.Count)
+				if res.Err != nil {
 					log.Fatal("Failed to get VF for iface ", ifName, " ", err)
 				}
+				if res.Val == nil {
+					log.Fatal("Virtual Funcitons are empty for ", ifName)
+				}
 
-				for _, vf := range vfs.Data {
+				for _, vf := range res.Val.Data {
 					vfIb, err := createVfIoBundle(*ib, vf)
 					if err != nil {
 						log.Fatal("createVfIoBundle failed ", err)
