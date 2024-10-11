@@ -129,6 +129,7 @@ func GetVfByTimeout(timeout time.Duration, device string, expectedVfCount uint8)
 // AsyncGetVF returns Vf for given PF asynchronously
 func AsyncGetVF(ctx context.Context, device string, expectedVfCount uint8) chan Result {
 	ch := make(chan Result)
+	defer close(ch)
 	go func() {
 		select {
 		default:

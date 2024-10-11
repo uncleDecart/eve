@@ -2955,6 +2955,7 @@ func handlePhysicalIOAdapterListImpl(ctxArg interface{}, key string,
 					log.Fatal("Failed to resolve ifname for PCI address ", ib.PciLong)
 				}
 
+				log.Errorf("Creating for iface %s", ifName)
 				err = sriov.CreateVF(ifName, ib.Vfs.Count)
 				if err != nil {
 					log.Fatal("Failed to create VF for iface with PCI address", ib.PciLong)
