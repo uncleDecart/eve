@@ -8,6 +8,7 @@
 # has a fast path for stack unwinding. This also happens
 # to be a perfect place to put any other kind of debug info
 # into the package: see abuild/etc/abuild.conf.
+FROM lfedge/eve-nkv:5cf72d91760f34815b5fc7fe47e5279cc2ae63c7 AS nkv
 FROM lfedge/eve-recovertpm:6bfac2a42181926d6e9144f30c0a6ee634a75156 AS recovertpm
 FROM lfedge/eve-bpftrace:abb65c7e35c1236f406ca8c56b39feeb560c13b3 AS bpftrace
 FROM lfedge/eve-alpine:e799def68af51dba83ec5a41f34bd0109704574f AS build
@@ -143,6 +144,9 @@ WORKDIR /
 
 COPY --from=build /out/ /
 COPY --from=build /bpftrace/bpftrace-aotrt /
+
+# with nkv-client we can communicate with nkv
+COPY --from=nkv /sbin/nkv-client /out/usr/bin/nkv-client
 
 RUN rm -rf /usr/share/vim/vim82/doc/
 
