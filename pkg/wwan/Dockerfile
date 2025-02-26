@@ -50,9 +50,10 @@ WORKDIR /picocom
 RUN make -j "$(getconf _NPROCESSORS_ONLN)" && strip picocom && cp picocom /usr/bin/
 
 # Install FCC-unlock scripts/tools provided by device vendors
-ADD --keep-git-dir=true https://github.com/lenovo/lenovo-wwan-unlock.git#${LENOVO_WWAN_UNLOCK_COMMIT} /lenovo-wwan-unlock
+ADD lenovo-wwan-unlock /lenovo-wwan-unlock
 WORKDIR /lenovo-wwan-unlock
 RUN cp libmbimtools.so /out/usr/lib/ && chmod 444 /out/usr/lib/libmbimtools.so
+RUN cp libdpr.so.2.0.1 /out/usr/lib/ && chmod 444 /out/usr/lib/libdpr.so.2.0.1
 RUN mkdir -p /out/opt/lenovo/ && \
     cp DPR_Fcc_unlock_service /out/opt/lenovo/ && chmod 544 /out/opt/lenovo/DPR_Fcc_unlock_service
 COPY --chown=root:root --chmod=500 fcc-unlock /out/usr/lib/ModemManager/fcc-unlock.d
