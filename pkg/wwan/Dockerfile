@@ -2,10 +2,11 @@
 
 # Copyright (c) 2023 Zededa, Inc.
 # SPDX-License-Identifier: Apache-2.0
+# comment
 
 FROM lfedge/eve-alpine:591df01e581889c3027514c8a91feaca1c8ad49f AS build
 ENV BUILD_PKGS meson ninja git libc-dev glib-dev make gcc udev dbus-dev libgudev-dev go
-ENV PKGS alpine-baselayout dbus glib kmod-dev libgudev
+ENV PKGS alpine-baselayout dbus glib kmod-dev libgudev strace pciutils
 RUN eve-alpine-deploy.sh
 
 ENV MM_VERSION=1.22.0
@@ -50,9 +51,10 @@ WORKDIR /picocom
 RUN make -j "$(getconf _NPROCESSORS_ONLN)" && strip picocom && cp picocom /usr/bin/
 
 # Install FCC-unlock scripts/tools provided by device vendors
-ADD --keep-git-dir=true https://github.com/lenovo/lenovo-wwan-unlock.git#${LENOVO_WWAN_UNLOCK_COMMIT} /lenovo-wwan-unlock
+ADD lenovo-wwan-unlock /lenovo-wwan-unlock
 WORKDIR /lenovo-wwan-unlock
 RUN cp libmbimtools.so /out/usr/lib/ && chmod 444 /out/usr/lib/libmbimtools.so
+RUN cp libdpr.so.2.0.1 /out/usr/lib/ && chmod 444 /out/usr/lib/libdpr.so.2.0.1
 RUN mkdir -p /out/opt/lenovo/ && \
     cp DPR_Fcc_unlock_service /out/opt/lenovo/ && chmod 544 /out/opt/lenovo/DPR_Fcc_unlock_service
 COPY --chown=root:root --chmod=500 fcc-unlock /out/usr/lib/ModemManager/fcc-unlock.d
