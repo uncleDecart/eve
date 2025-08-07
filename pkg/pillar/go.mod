@@ -178,9 +178,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.23.1 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/oauth2 v0.16.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/term v0.29.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/sync v0.14.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.160.0 // indirect
 	google.golang.org/genproto v0.0.0-20240205150955-31a09d347014 // indirect
@@ -254,6 +254,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
+	google.golang.org/appengine v1.6.8 // indirect
 	k8s.io/apiextensions-apiserver v0.28.1 // indirect
 	k8s.io/cli-runtime v0.28.5 // indirect
 	k8s.io/component-base v0.28.5 // indirect
@@ -271,7 +272,7 @@ require (
 )
 
 replace (
-	github.com/nkval/go-nkv => /Users/pabramov/go/src/github.com/uncleDecart/go-nkv
+	github.com/nkval/go-nkv => /home/pabramov/go/src/github.com/uncleDecart/go-nkv
 	github.com/openshift/api => github.com/openshift/api v0.0.0-20210105115604-44119421ec6b
 	k8s.io/api => k8s.io/api v0.26.3
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.26.3

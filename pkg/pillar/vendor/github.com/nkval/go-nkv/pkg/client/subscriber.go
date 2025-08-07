@@ -68,5 +68,4 @@ func (s *Subscriber) connect() error {
 			s.tx <- *n
 		}
 	}
-
 }
