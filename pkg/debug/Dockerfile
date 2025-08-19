@@ -130,6 +130,8 @@ RUN mkdir -p /bpftrace/bpftrace-aotrt
 # add recover-tpm to debug container
 WORKDIR /
 COPY --from=recovertpm /usr/bin/recovertpm /out/usr/bin/recovertpm
+# with nkv-client we can communicate with nkv
+COPY --from=nkv /sbin/nkv-client /out/usr/bin/nkv-client
 
 FROM build AS test
 # run collect-info test
@@ -144,9 +146,6 @@ WORKDIR /
 
 COPY --from=build /out/ /
 COPY --from=build /bpftrace/bpftrace-aotrt /
-
-# with nkv-client we can communicate with nkv
-COPY --from=nkv /sbin/nkv-client /out/usr/bin/nkv-client
 
 RUN rm -rf /usr/share/vim/vim82/doc/
 
