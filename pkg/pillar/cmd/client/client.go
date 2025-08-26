@@ -469,6 +469,7 @@ func Run(ps *pubsub.PubSub, loggerArg *logrus.Logger, logArg *base.LogObject, ar
 		trigOnboardStatus.DeviceUUID = devUUID
 		trigOnboardStatus.HardwareModel = hardwaremodel
 
+		log.Errorf("AMIGO client pub OnboardStatus")
 		pubOnboardStatus.Publish("global", trigOnboardStatus)
 		log.Functionf("client pub OnboardStatus")
 

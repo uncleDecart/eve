@@ -170,7 +170,7 @@ func handleEdgeNodeCertImpl(ctxArg interface{}, key string,
 
 	ctx := ctxArg.(*zedagentContext)
 	status := configArg.(types.EdgeNodeCert)
-	log.Functionf("handleEdgeNodeCertImpl for %s", status.Key())
+	log.Errorf("AMIGO: handleEdgeNodeCertImpl for %s", status.Key())
 	triggerEdgeNodeCertEvent(ctx)
 }
 
@@ -179,7 +179,7 @@ func handleEdgeNodeCertDelete(ctxArg interface{}, key string,
 
 	ctx := ctxArg.(*zedagentContext)
 	status := configArg.(types.EdgeNodeCert)
-	log.Functionf("handleEdgeNodeCertDelete for %s", status.Key())
+	log.Errorf("AMIGO: handleEdgeNodeCertDelete for %s", status.Key())
 	triggerEdgeNodeCertEvent(ctx)
 }
 
@@ -428,7 +428,7 @@ func getCertsFromController(ctx *zedagentContext, desc string) bool {
 
 // edge node certificate post task, on change trigger
 func edgeNodeCertsTask(ctx *zedagentContext, triggerEdgeNodeCerts chan struct{}) {
-	log.Functionln("starting edge node certificates publish task")
+	log.Errorf("AMIGO: starting edge node certificates publish task")
 
 	publishEdgeNodeCertsToController(ctx)
 
@@ -607,6 +607,7 @@ func triggerEdgeNodeCertEvent(ctxPtr *zedagentContext) {
 func triggerEdgeNodeCertDelayedEvent(ctxPtr *zedagentContext, d time.Duration) {
 	go func() {
 		time.Sleep(d)
+		log.Error("AMIGO Triiggerd delayed")
 		triggerEdgeNodeCertEvent(ctxPtr)
 	}()
 }

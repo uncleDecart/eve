@@ -443,31 +443,41 @@ func Run(ps *pubsub.PubSub, loggerArg *logrus.Logger, logArg *base.LogObject, ar
 	if parse == "" {
 		waitUntilOnboarded(zedagentCtx, stillRunning)
 	}
+	log.Errorf("MUCHACHO A")
 	// Netdumper uses different publish period after onboarding.
 	reinitNetdumper(zedagentCtx)
+	log.Errorf("MUCHACHO B")
 
 	// We know our own UUID; prepare for communication with controller
 	ctrlClient = initZedcloudContext(getconfigCtx,
 		zedagentCtx.globalConfig.GlobalValueInt(types.NetworkSendTimeout),
 		zedagentCtx.globalConfig.GlobalValueInt(types.NetworkDialTimeout),
 		zedagentCtx.agentMetrics)
+	log.Errorf("MUCHACHO C")
 
 	if parse != "" {
+		log.Errorf("MUCHACHO D1")
 		res, config := readValidateConfig(parse)
 		if !res {
 			fmt.Printf("Failed to parse %s\n", parse)
 			return 1
 		}
+		log.Errorf("MUCHACHO D2")
 		fmt.Printf("parsed proto <%v>\n", config)
 		if validate {
+			log.Errorf("MUCHACHO D21")
 			valid := validateConfigUTF8(config)
+			log.Errorf("MUCHACHO D22")
 			if !valid {
 				fmt.Printf("Found some invalid UTF-8\n")
 				return 1
 			}
+			log.Errorf("MUCHACHO D23")
 		}
+		log.Errorf("MUCHACHO D")
 		return 0
 	}
+	log.Errorf("MUCHACHO E")
 
 	// Timer for deferred sends of info messages
 	zedagentCtx.deferredEventQueue = controllerconn.CreateDeferredQueue(log, ctrlClient,
@@ -482,14 +492,18 @@ func Run(ps *pubsub.PubSub, loggerArg *logrus.Logger, logArg *base.LogObject, ar
 		zedagentCtx.ps, agentName, "DeferredLOCPeriodic",
 		warningTime, errorTime, nil)
 	// XXX defer this until we have some config from cloud or saved copy
+	log.Errorf("MUCHACHO F")
 	getconfigCtx.pubAppInstanceConfig.SignalRestarted()
+	log.Errorf("MUCHACHO G")
 
 	// Initialize remote attestation context. Do this before we get events
 	// from the AttestQuote and EncryptedKeyFromDevice subscriptions
 	attestModuleInitialize(zedagentCtx)
+	log.Errorf("MUCHACHO K")
 
 	// With device UUID, zedagent is ready to initialize and activate all subscriptions.
 	initPostOnboardSubs(zedagentCtx)
+	log.Errorf("MUCHACHO L")
 
 	// Wait until we initialize the context from node agent status.
 	// At least we need to be sure the bootReason field is set properly, as it's used during fetching local config,
@@ -701,7 +715,7 @@ func initializeDirs() {
 func waitUntilOnboarded(zedagentCtx *zedagentContext, stillRunning *time.Ticker) {
 	nilUUID := uuid.UUID{}
 	for devUUID == nilUUID {
-		log.Functionf("Waiting for OnboardStatus UUID")
+		log.Errorf("BAZINGA Waiting for OnboardStatus UUID")
 		select {
 		case change := <-zedagentCtx.subOnboardStatus.MsgChan():
 			zedagentCtx.subOnboardStatus.ProcessChange(change)
@@ -1352,6 +1366,7 @@ func initPublications(zedagentCtx *zedagentContext) {
 // All but one zedagent subscription (subOnboardStatus) are activated
 // only after zedagent knows device UUID.
 func initPostOnboardSubs(zedagentCtx *zedagentContext) {
+	log.Error("GRINGO A")
 	var err error
 	ps := zedagentCtx.ps
 	getconfigCtx := zedagentCtx.getconfigCtx
@@ -1371,6 +1386,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO B")
 
 	// Look for global config such as log levels
 	// Note that we use these handlers to process updates from
@@ -1396,6 +1412,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 		log.Fatal(err)
 	}
 	zedagentCtx.subGlobalConfig.Activate()
+	log.Error("GRINGO C")
 
 	zedagentCtx.subNetworkInstanceStatus, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:     "zedrouter",
@@ -1425,6 +1442,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO D")
 
 	zedagentCtx.subNetworkInstanceMetrics, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:   "zedrouter",
@@ -1454,6 +1472,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO E")
 
 	// Look for AppInstanceStatus from zedmanager
 	getconfigCtx.subAppInstanceStatus, err = ps.NewSubscription(pubsub.SubscriptionOptions{
@@ -1488,6 +1507,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO F")
 
 	// Look for VolumeStatus from volumemgr
 	getconfigCtx.subVolumeStatus, err = ps.NewSubscription(pubsub.SubscriptionOptions{
@@ -1505,6 +1525,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO F1")
 
 	// Look for DomainMetric from domainmgr
 	getconfigCtx.subDomainMetric, err = ps.NewSubscription(pubsub.SubscriptionOptions{
@@ -1519,6 +1540,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO F2")
 
 	// Look for ProcessMetric from domainmgr
 	getconfigCtx.subProcessMetric, err = ps.NewSubscription(pubsub.SubscriptionOptions{
@@ -1533,6 +1555,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO G")
 
 	getconfigCtx.subHostMemory, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:   "domainmgr",
@@ -1579,6 +1602,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO H")
 
 	// sub AppContainerMetrics from zedrouter
 	zedagentCtx.subAppContainerMetrics, err = ps.NewSubscription(pubsub.SubscriptionOptions{
@@ -1631,7 +1655,10 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Error("GRINGO K")
+
 	zedagentCtx.subEdgeNodeCert.Activate()
+	log.Error("GRINGO L")
 
 	zedagentCtx.subVaultStatus, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:     "vaultmgr",
@@ -1681,6 +1708,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 		log.Fatal(err)
 	}
 
+	log.Error("GRINGO M")
 	// Look for nodeagent status
 	getconfigCtx.subNodeAgentStatus, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:     "nodeagent",
@@ -1731,6 +1759,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 		log.Fatal(err)
 	}
 	zedagentCtx.DevicePortConfigList = &types.DevicePortConfigList{}
+	log.Error("GRINGO N")
 
 	zedagentCtx.subBlobStatus, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:     "volumemgr",
@@ -1775,6 +1804,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 		log.Fatal(err)
 	}
 
+	log.Error("GRINGO O")
 	zedagentCtx.subAppDiskMetric, err = ps.NewSubscription(pubsub.SubscriptionOptions{
 		AgentName:     "volumemgr",
 		MyAgentName:   agentName,
@@ -1812,6 +1842,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 		ErrorTime:   errorTime,
 	})
 
+	log.Error("GRINGO P")
 	// Activate in the next step so that zedagentCtx.subAppInstMetaData is set
 	// before Modify handler is called by SubscriptionImpl.populate()
 	// (only needed for persistent subs).
@@ -2071,6 +2102,7 @@ func initPostOnboardSubs(zedagentCtx *zedagentContext) {
 		log.Fatal(err)
 	}
 
+	log.Error("GRINGO Q")
 	initKubeSubs(zedagentCtx)
 }
 
@@ -2848,6 +2880,7 @@ func handleOnboardStatusImpl(ctxArg interface{}, key string,
 
 	status := statusArg.(types.OnboardingStatus)
 	ctx := ctxArg.(*zedagentContext)
+	log.Errorf("AMIGO Device UUID changed from %s to %s", devUUID, status.DeviceUUID)
 	if devUUID == status.DeviceUUID {
 		return
 	}
@@ -2865,6 +2898,7 @@ func handleOnboardStatusImpl(ctxArg interface{}, key string,
 			ctx.deferredEventQueue.RemoveDeferred("attest:" + oldUUID.String())
 			if ctx.cipherCtx != nil && ctx.cipherCtx.triggerEdgeNodeCerts != nil {
 				// Re-publish certificates with new device UUID
+				log.Errorf("AMIGO: DEVICE UUID CHANGED triggering CERTS")
 				triggerEdgeNodeCertEvent(ctx.getconfigCtx.zedagentCtx)
 			}
 		}
