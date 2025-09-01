@@ -30,7 +30,7 @@ func NewNkvDriver(path string) *NkvDriver {
 		client:     nkvClient,
 	}
 
-	driver.client.Delete(driver.pubDirName("*"))
+	// driver.client.Delete(driver.pubDirName("*"))
 
 	return &driver
 }
