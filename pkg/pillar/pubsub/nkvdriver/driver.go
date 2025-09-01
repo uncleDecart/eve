@@ -25,10 +25,14 @@ func NewNkvDriver(path string) *NkvDriver {
 	}
 	nkvClient := client.NewClient(path)
 
-	return &NkvDriver{
+	driver := NkvDriver{
 		socketPath: sockPath,
 		client:     nkvClient,
 	}
+
+	driver.client.Delete(driver.pubDirName("*"))
+
+	return &driver
 }
 
 // (global bool, name, topic string, persistent bool, updaterList *pubsub.Updaters, restarted pubsub.Restarted, differ pubsub.Differ) (pubsub.DriverPublisher, error) {
