@@ -115,6 +115,7 @@ func setAttestErrorAndTriggerInfo(ctx *zattest.Context, errorDescription types.E
 
 // SendNonceRequest implements SendNonceRequest method of zattest.Verifier
 func (server *VerifierImpl) SendNonceRequest(ctx *zattest.Context) error {
+	log.Errorf("SEP3 SendNonceRequest started")
 	if ctx.OpaqueCtx == nil {
 		log.Fatalf("[ATTEST] Uninitialized access to OpaqueCtx")
 	}
@@ -139,7 +140,7 @@ func (server *VerifierImpl) SendNonceRequest(ctx *zattest.Context) error {
 
 	//Increment Iteration for interface rotation
 	attestCtx.Iteration++
-	log.Tracef("Sending Nonce request %v", attestReq)
+	log.Errorf("SEP3 Sending Nonce request %v", attestReq)
 
 	expectNoConn := attestCtx.zedagentCtx.airgapMode
 	rv, err := trySendToController(attestReq, attestCtx, expectNoConn)
@@ -152,6 +153,7 @@ func (server *VerifierImpl) SendNonceRequest(ctx *zattest.Context) error {
 		setAttestErrorAndTriggerInfo(ctx, errorDescription)
 		return zattest.ErrControllerReqFailed
 	}
+	log.Errorf("SEP3 attestReq done A")
 
 	attestResp := &attest.ZAttestResponse{}
 	if err := proto.Unmarshal(rv.RespContents, attestResp); err != nil {
@@ -162,6 +164,7 @@ func (server *VerifierImpl) SendNonceRequest(ctx *zattest.Context) error {
 		setAttestErrorAndTriggerInfo(ctx, errorDescription)
 		return zattest.ErrControllerReqFailed
 	}
+	log.Errorf("SEP3 attestReq unmarshal B")
 
 	respType := attestResp.GetRespType()
 	if respType != attest.ZAttestRespType_ATTEST_RESP_NONCE {
@@ -173,6 +176,7 @@ func (server *VerifierImpl) SendNonceRequest(ctx *zattest.Context) error {
 		setAttestErrorAndTriggerInfo(ctx, errorDescription)
 		return zattest.ErrControllerReqFailed
 	}
+	log.Errorf("SEP3 attestReq AttestErrorIs not triggered C")
 
 	if nonceResp := attestResp.GetNonce(); nonceResp == nil {
 		errorDescription := types.ErrorDescription{
@@ -187,6 +191,7 @@ func (server *VerifierImpl) SendNonceRequest(ctx *zattest.Context) error {
 		triggerPublishDevInfo(attestCtx.zedagentCtx)
 	}
 
+	log.Errorf("SEP3 SendNonceRequest done")
 	return nil
 }
 
@@ -634,11 +639,13 @@ func attestModuleStart(ctx *zedagentContext) error {
 // pubsub functions
 func handleAttestQuoteCreate(ctxArg interface{}, key string,
 	quoteArg interface{}) {
+	log.Errorf("SEP3 handleAttestQuoteCreate started")
 	handleAttestQuoteImpl(ctxArg, key, quoteArg)
 }
 
 func handleAttestQuoteModify(ctxArg interface{}, key string,
 	quoteArg interface{}, oldQuoteArg interface{}) {
+	log.Errorf("SEP3 handleAttestQuoteModify started")
 	handleAttestQuoteImpl(ctxArg, key, quoteArg)
 }
 
@@ -800,9 +807,10 @@ func unpublishAttestNonce(ctx *attestContext) {
 	}
 	pub := ctx.pubAttestNonce
 	key := nonce.Key()
+	log.Errorf("SEP3: unpublishAttestNonce started for %s", key)
 	c, _ := pub.Get(key)
 	if c == nil {
-		log.Errorf("[ATTEST] unpublishAttestNonce(%s) not found", key)
+		log.Errorf("SEP3: [ATTEST] unpublishAttestNonce(%s) not found", key)
 		return
 	}
 	pub.Unpublish(key)
@@ -810,11 +818,11 @@ func unpublishAttestNonce(ctx *attestContext) {
 	if len(items) > 0 {
 		for _, item := range items {
 			nonce := item.(types.AttestNonce)
-			log.Errorf("[ATTEST] Stale nonce item found, %s", nonce.Key())
+			log.Errorf("SEP3: [ATTEST] Stale nonce item found, %s", nonce.Key())
 		}
-		log.Fatal("[ATTEST] Stale nonce items found after unpublishing")
+		log.Fatal("SEP3: [ATTEST] Stale nonce items found after unpublishing")
 	}
-	log.Tracef("[ATTEST] unpublishAttestNonce done for %s", key)
+	log.Errorf("SEP3 [ATTEST] unpublishAttestNonce done for %s", key)
 }
 
 // helper to set IntegrityToken
