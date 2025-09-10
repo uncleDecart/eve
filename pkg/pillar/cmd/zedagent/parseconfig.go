@@ -2947,6 +2947,7 @@ func checkAndPublishAppInstanceConfig(pub pubsub.Publication,
 	config types.AppInstanceConfig) {
 
 	key := config.Key()
+	log.Errorf("KKARAMBA %v", key)
 	log.Tracef("checkAndPublishAppInstanceConfig UUID %s", key)
 	if err := pub.CheckMaxSize(key, config); err != nil {
 		log.Error(err)
@@ -3037,6 +3038,7 @@ func checkAndPublishAppInstanceConfig(pub pubsub.Publication,
 		}
 	}
 
+	log.Errorf("PUBLISHING to %v", key)
 	pub.Publish(key, config)
 }
 
