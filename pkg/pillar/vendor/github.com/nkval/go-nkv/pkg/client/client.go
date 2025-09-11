@@ -1,8 +1,8 @@
 package client
 
 import (
-	"bufio"
 	"fmt"
+	framed "github.com/getlantern/framed"
 	"github.com/google/uuid"
 	p "github.com/nkval/go-nkv/pkg/protocol"
 	"net"
@@ -100,23 +100,23 @@ func (c *Client) Unsubscribe(key string) (*p.Response, error) {
 
 func (c *Client) sendRequest(req p.Request) (*p.Response, error) {
 	conn, err := net.Dial("unix", c.addr)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to connect to server: %v\n", err)
-	}
-	defer conn.Close()
+	codec := framed.NewReadWriteCloser(conn)
+	codec.EnableBigFrames()
+
+	defer codec.Close()
 
 	marshalledReq := fmt.Sprintf("%s\n", p.MarshalRequest(&req))
-	_, err = conn.Write([]byte(marshalledReq))
+	_, err = codec.Write([]byte(marshalledReq))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send message: %v\n", err)
 	}
 
-	response, err := bufio.NewReader(conn).ReadString('\n')
+	response, err := codec.ReadFrame()
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read response: %v\n", err)
 	}
 
-	return p.UnmarshalResponse(response)
+	return p.UnmarshalResponse(string(response))
 }
 
 func generateUuid() string {

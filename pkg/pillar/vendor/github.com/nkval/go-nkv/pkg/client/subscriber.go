@@ -1,8 +1,8 @@
 package client
 
 import (
-	"bufio"
 	"fmt"
+	framed "github.com/getlantern/framed"
 	p "github.com/nkval/go-nkv/pkg/protocol"
 	"net"
 	"time"
@@ -40,10 +40,10 @@ func (s *Subscriber) Start() {
 
 func (s *Subscriber) connect() error {
 	conn, err := net.Dial("unix", s.addr)
-	if err != nil {
-		return fmt.Errorf("Failed to connect to server: %v\n", err)
-	}
-	defer conn.Close()
+	codec := framed.NewReadWriteCloser(conn)
+	codec.EnableBigFrames()
+
+	defer codec.Close()
 
 	req := p.Request{
 		Request:   p.RequestSub,
@@ -51,17 +51,17 @@ func (s *Subscriber) connect() error {
 		ClientID:  s.clientUuid,
 		Key:       s.key,
 	}
-	_, err = conn.Write([]byte(p.MarshalRequest(&req)))
+	_, err = codec.Write([]byte(p.MarshalRequest(&req)))
 	if err != nil {
 		return fmt.Errorf("Failed to send message: %v\n", err)
 	}
 
 	for {
-		response, err := bufio.NewReader(conn).ReadString('\n')
+		response, err := codec.ReadFrame()
 		if err != nil {
 			return fmt.Errorf("Failed to read response: %v\n", err)
 		}
-		if n, err := p.UnmarshalNotification(response); err != nil {
+		if n, err := p.UnmarshalNotification(string(response)); err != nil {
 			fmt.Printf("Failed to marshal request %v", err)
 			continue
 		} else {
