@@ -40,6 +40,9 @@ func (s *Subscriber) Start() {
 
 func (s *Subscriber) connect() error {
 	conn, err := net.Dial("unix", s.addr)
+	if err != nil {
+		return fmt.Errorf("Failed to connect to server: %v\n", err)
+	}
 	codec := framed.NewReadWriteCloser(conn)
 	codec.EnableBigFrames()
 

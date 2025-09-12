@@ -100,6 +100,9 @@ func (c *Client) Unsubscribe(key string) (*p.Response, error) {
 
 func (c *Client) sendRequest(req p.Request) (*p.Response, error) {
 	conn, err := net.Dial("unix", c.addr)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to connect to server: %v\n", err)
+	}
 	codec := framed.NewReadWriteCloser(conn)
 	codec.EnableBigFrames()
 
